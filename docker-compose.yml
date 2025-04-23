@@ -1,0 +1,36 @@
+services:
+  fastapi-otel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi-otel
+    ports:
+      - "8000:8000"
+    depends_on:
+      - otel-lgtm
+    environment:
+      OTEL_METRIC_EXPORT_INTERVAL: "5000" # so we don't have to wait 60s for metrics
+      OTEL_SERVICE_NAME: "fastapi-otel"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-lgtm:4317"
+      OTEL_EXPORTER_OTLP_INSECURE: true
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+    networks:
+      - otel-net
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: otel-lgtm
+    ports:
+      - "3000:3000"    # Grafana
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    # volumes:
+      # - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    # command: [ "/otel-lgtm/run-all.sh", "--config", "/etc/otel-collector-config.yaml" ]
+    networks:
+      - otel-net
+networks:
+  otel-net:
+    driver: bridge
